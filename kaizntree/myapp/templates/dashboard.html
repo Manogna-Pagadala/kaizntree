@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Item Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background-color: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .items-info {
+      text-align: right;
+    }
+
+    .items-info p {
+      margin: 5px 0;
+    }
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 20% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #ddd;
+    }
+
+    .new-item-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin-bottom: 20px;
+      margin-right: 20px;
+    }
+
+    .search-container {
+      float: right;
+      margin-top: 20px;
+    }
+
+    .search-container input[type=text] {
+      padding: 6px;
+      margin-top: 8px;
+      font-size: 17px;
+      border: none;
+    }
+
+    .search-container button {
+      float: right;
+      padding: 6px 10px;
+      margin-top: 8px;
+      margin-right: 16px;
+      background: #ddd;
+      font-size: 17px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .search-container button:hover {
+      background: #ccc;
+    }
+
+    .search-container button:active {
+      background: #666;
+      color: white;
+    }
+
+    .filter-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin-right: 20px;
+      cursor: pointer;
+    }
+
+  </style>
+</head>
+<body>
+  <header class="header">
+    <!-- Button to open the modal -->
+      <button id="new-category-btn" style="background-color: green; color: white;">NEW ITEM CATEGORY</button>
+    <div class="title">Items Dashboard</div>
+    <!-- Display total categories and total items -->
+<p>Total Categories: <span id="totalCategories">{{ total_categories }}</span></p>
+<p>Total Items: <span id="totalItems">{{ total_items }}</span></p>
+
+  </header>
+
+
+
+  <!-- Popup modal -->
+  <div id="myModal" class="modal">
+    <div class="modal-content" style="width: 50%;">
+      <span class="close">&times;</span>
+      <h2>CREATE NEW ITEM CATEGORY</h2>
+      <form id="createForm">
+        {% csrf_token %}
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name"><br>
+        <span id="nameError" style="color: red; display: none;">This field is required.</span><br>
+        <span id="nameError1" style="color: red; display: none;">This category is already there in database.</span><br>
+        <label for="description">Description:</label><br>
+        <textarea id="description" name="description"></textarea><br>
+        <label for="parent">Parent:</label><br>
+        <select id="parent" name="parent">
+           <!-- Options for parent categories -->
+        {% for category in categories %}
+          <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+        </select><br>
+        <span id="parentError" style="color: red; display: none;">This field is required.</span><br>
+        <label for="keywords">Keywords:</label><br>
+        <input type="text" id="keywords" name="keywords"><br>
+        <label for="default-location">Default Location:</label><br>
+        <input type="text" id="default-location" name="default-location"><br>
+        <button type="submit" style="background-color: gray; color: black;">Create</button>
+      </form>
+    </div>
+  </div>
+  <!-- Popup modal for adding a new item -->
+<div id="addItemModal" class="modal">
+  <div class="modal-content" style="width: 50%;">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2>Add New Item</h2>
+    <form id="addItemForm">
+      {% csrf_token %}
+      <label for="sku">SKU</label>
+      <input type="text" id="sku" name="sku"><br>
+      <label for="name">Name</label>
+      <input type="text" id="name1" name="name"><br>
+      <label for="tags">Tags</label>
+      <input type="text" id="tags" name="tags"><br>
+      <label for="description">Description</label>
+      <input type="text" id="description1" name="description"><br>
+      <label for="category">Category</label>
+        <select id="category" name="category">
+           <!-- Options for parent categories -->
+        {% for category in categories %}
+          <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+        </select><br>
+      <label for="price">Price</label>
+      <input type="text" id="price" name="price"><br>
+      <label for="instock">In Stock</label>
+      <input type="text" id="instock" name="instock"><br>
+      <label for="netstock">Net Stock</label>
+      <input type="text" id="netstock" name="netstock"><br>
+      <label for="availablestock">Available Stock</label>
+      <input type="text" id="availablestock" name="availablestock"><br>
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" value={{username}}><br><br>
+
+      <button type="submit" style="background-color: gray; color: black;">Add Item</button>
+    </form>
+  </div>
+</div>
+  <!-- Popup modal for filter -->
+<div id="filterModal" class="modal">
+  <div class="modal-content" style="width: 50%;">
+    <span id="filterCloseBtn" class="close">&times;</span>
+    <h2>Filter Items</h2>
+    <form id="filterForm">
+      {% csrf_token %}
+      <label for="categoryInput">Category</label>
+      <input type="text" id="categoryInput" name="categoryFilter"><br>
+      <label for="nameInput">Name</label>
+      <input type="text" id="nameInput" name="nameFilter"><br>
+      <label for="skuInput">SKU</label>
+      <input type="text" id="skuInput" name="skuFilter"><br>
+      <button id="applyFilterBtn" type="button" style="background-color: gray; color: black;">Apply Filter</button>
+    </form>
+  </div>
+</div>
+
+  <header class="header">
+    <button id="new-category-btn1" class="new-item-btn">NEW ITEM</button>
+    <div class="search-container">
+  <input type="text" id="searchInput" placeholder="Item Name..">
+  <button id="searchBtn">Search</button>
+</div>
+    <!-- Button to open the filter modal -->
+    <button id="filterBtn" class="filter-btn" onclick="openFilterModal()">Filter</button>
+  </header>
+  <!-- Table to display items data -->
+  <table id="items-table">
+    <thead>
+      <tr>
+        <th><button class="header-btn" onclick="sortTable(0)">SKU</button></th>
+      <th><button class="header-btn" onclick="sortTable(1)">Name</button></th>
+        <th>Tags</th>
+        <th><button class="header-btn" onclick="sortTable(2)">Category</button></th>
+      <th><button class="header-btn" onclick="sortTable(3)">In Stock</button></th>
+      <th><button class="header-btn" onclick="sortTable(4)">Available Stock</button></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.sku }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.tags }}</td>
+        <td>{{ item.category }}</td>
+        <td>
+    {% if item.in_stock < 100 %}
+        {% with '<span style="color: red;">&#9679;</span>' as dot %}
+            {{ dot }}
+        {% endwith %}
+    {% elif item.in_stock >= 100 %}
+        {% with '<span style="color: green;">&#9679;</span>' as dot %}
+            {{ dot }}
+        {% endwith %}
+    {% endif %}
+    {{ item.in_stock }}</td>
+        <td>
+    {% if item.available_stock < 100 %}
+        {% with '<span style="color: red;">&#9679;</span>' as dot %}
+            {{ dot }}
+        {% endwith %}
+    {% elif item.available_stock >= 100 %}
+        {% with '<span style="color: green;">&#9679;</span>' as dot %}
+            {{ dot }}
+        {% endwith %}
+    {% endif %}
+    {{ item.available_stock }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- JavaScript to handle modal display -->
+  <script>
+    // Get the modal
+    var modal = document.getElementById("myModal");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("new-category-btn");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal
+    btn.onclick = function() {
+      modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+      modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+  </script>
+
+  <script>
+    // Event listener for input field to check for category name uniqueness
+    var nameInput = document.getElementById("name");
+    nameInput.addEventListener("input", function() {
+      var name = nameInput.value;
+      var xhr = new XMLHttpRequest();
+       xhr.open("GET", "{% url 'check_category_name' %}", true);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          var response = JSON.parse(xhr.responseText);
+          if (response.exists) {
+            document.getElementById("nameError1").style.display = "block";
+          } else {
+            document.getElementById("nameError1").style.display = "none";
+          }
+        } else {
+          console.error("Failed to check category name uniqueness.");
+        }
+      };
+      xhr.send();
+    });
+  </script>
+  <!-- JavaScript to handle form submission -->
+<script>
+  var createForm = document.getElementById("createForm");
+  createForm.onsubmit = function(event) {
+    event.preventDefault(); // Prevent default form submission
+    var name = document.getElementById("name").value;
+    var parent = document.getElementById("parent").value;
+    // Client-side validation
+    if (!name) {
+      document.getElementById("nameError").style.display = "block";
+      return false;
+    } else {
+      document.getElementById("nameError").style.display = "none";
+    }
+
+    if (!parent) {
+      document.getElementById("parentError").style.display = "block";
+      return false;
+    } else {
+      document.getElementById("parentError").style.display = "none";
+    }
+    // If validation passes, submit the form data via AJAX
+    var formData = new FormData(createForm);
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "{% url 'create_category' %}", true); // Change the URL to your Django view URL
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        alert("Category created successfully!");
+        var responseData = JSON.parse(xhr.responseText);
+        // Update dashboard elements with the received data
+        document.getElementById('totalCategories').innerText = responseData.total_categories;
+        modal.style.display = "none"; // Close the modal
+      } else {
+        alert("Failed to create category. Please try again.");
+      }
+    };
+    xhr.send(formData);
+  };
+
+
+
+  // Get the modal
+  var addItemModal = document.getElementById("addItemModal");
+  // Function to open the addItemModal
+function openAddItemModal() {
+  addItemModal.style.display = "block";
+}
+// Function to close the addItemModal
+function closeAddItemModal() {
+  addItemModal.style.display = "none";
+}
+// Function to open the filterModal
+function openFilterModal() {
+  filterModal.style.display = "block";
+}
+
+// Function to close the filterModal
+function closeFilterModal() {
+  filterModal.style.display = "none";
+}
+
+// Event listener for clicks outside of the addItemModal
+window.onclick = function(event) {
+  if (event.target == addItemModal) {
+    closeAddItemModal();
+  }
+  if (event.target == filterModal) {
+    closeFilterModal();
+  }
+};
+
+  // Get the button that opens the modal
+  var addItemBtn = document.getElementById("new-category-btn1");
+
+  // When the user clicks the button, open the modal
+  addItemBtn.onclick = function() {
+    openAddItemModal();
+  }
+// Get the button that opens the filterModal
+var filterBtn = document.getElementById("filterBtn");
+
+// When the user clicks the button, open the filterModal
+filterBtn.onclick = function() {
+  openFilterModal();
+}
+  // Get the form
+  var addItemForm = document.getElementById("addItemForm");
+
+  // When the user submits the form, handle form submission
+addItemForm.onsubmit = function(event) {
+  event.preventDefault(); // Prevent default form submission
+
+  // Get form data
+  var formData = new FormData(addItemForm);
+
+  // Submit the form data via AJAX
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", "{% url 'add_item' %}", true); // Change the URL to your Django view URL
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      alert("Item added successfully!");
+      var responseData = JSON.parse(xhr.responseText);
+      document.getElementById('totalCategories').innerText = responseData.total_categories;
+      document.getElementById('totalItems').innerText = responseData.total_items;
+
+      // Update table entries directly
+      var tableBody = document.querySelector('#items-table tbody');
+      tableBody.innerHTML = ''; // Clear existing table rows
+      responseData.items.forEach(function(item) {
+        var row = tableBody.insertRow();
+        row.innerHTML = `<td>${item.sku}</td>
+                         <td>${item.name}</td>
+                         <td>${item.tags}</td>
+                         <td>${item.category}</td>
+                     <td>${item.in_stock < 100 ? '<span style="color: red;">&#9679;</span> ' : '<span style="color: green;">&#9679;</span> '}${item.in_stock}</td>
+                     <td>${item.available_stock < 100 ? '<span style="color: red;">&#9679;</span> ' : '<span style="color: green;">&#9679;</span> '}${item.available_stock}</td>`;
+      });
+
+      closeModal(); // Close the modal
+    } else {
+      alert("Failed to add item. Please try again.");
+    }
+  };
+  xhr.send(formData);
+};
+</script>
+
+<!-- JavaScript to handle sorting -->
+<script>
+
+    function sortTable(columnIndex) {
+    var table, rows, switching, i, x, y, shouldSwitch;
+    table = document.getElementById("items-table");
+    switching = true;
+    while (switching) {
+        switching = false;
+        rows = table.rows;
+        for (i = 1; i < (rows.length - 1); i++) {
+            shouldSwitch = false;
+            x = rows[i].getElementsByTagName("td")[columnIndex];
+            y = rows[i + 1].getElementsByTagName("td")[columnIndex];
+            var xValue, yValue;
+
+            // Parse the inner text of the cells to numbers if possible
+            if (!isNaN(parseFloat(x.innerText))) {
+                xValue = parseFloat(x.innerText);
+            } else {
+                xValue = x.innerText.toLowerCase();
+            }
+
+            if (!isNaN(parseFloat(y.innerText))) {
+                yValue = parseFloat(y.innerText);
+            } else {
+                yValue = y.innerText.toLowerCase();
+            }
+
+            // For columns containing numbers, compare as numbers
+            if (!isNaN(xValue) && !isNaN(yValue)) {
+                if (xValue > yValue) {
+                    shouldSwitch = true;
+                    break;
+                }
+            } else {
+                // For non-numeric columns, compare as strings
+                if (xValue > yValue) {
+                    shouldSwitch = true;
+                    break;
+                }
+            }
+        }
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
+        }
+    }
+}
+
+
+
+
+</script>
+<!-- JavaScript to handle search -->
+<script>
+  var searchBtn = document.getElementById("searchBtn");
+searchBtn.addEventListener("click", function() {
+  var searchText = document.getElementById("searchInput").value;
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "{% url 'your_search_view' %}?search=" + searchText, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      var responseData = JSON.parse(xhr.responseText);
+      document.getElementById('totalCategories').innerText = responseData.total_categories;
+      document.getElementById('totalItems').innerText = responseData.total_items;
+
+      // Update table entries directly
+      var tableBody = document.querySelector('#items-table tbody');
+      tableBody.innerHTML = ''; // Clear existing table rows
+      responseData.items.forEach(function(item) {
+        var row = tableBody.insertRow();
+        row.innerHTML = `<td>${item.sku}</td>
+                         <td>${item.name}</td>
+                         <td>${item.tags}</td>
+                         <td>${item.category}</td>
+                         <td>${item.in_stock < 100 ? '<span style="color: red;">&#9679;</span>' : '<span style="color: green;">&#9679;</span>'}${item.in_stock}</td>
+                         <td>${item.available_stock < 100 ? '<span style="color: red;">&#9679;</span>' : '<span style="color: green;">&#9679;</span>'}${item.available_stock}</td>`;
+      });
+
+      closeModal();
+    } else {
+      // Handle the error
+      console.error("Failed to retrieve search results.");
+    }
+  };
+  // Send the request to the server
+  xhr.send();
+});
+
+</script>
+  <!-- JavaScript to handle filter modal -->
+  <script>
+    // Get the filter modal
+    //var filterModal = document.getElementById("filterModal");
+
+    // Get the filter button
+    //var filterBtn = document.getElementById("filterBtn");
+
+    // Get the <span> element that closes the modal
+    var filterCloseBtn = document.getElementById("filterCloseBtn");
+
+    // When the user clicks the filter button, open the modal
+   // filterBtn.onclick = function() {
+      //filterModal.style.display = "block";
+    //}
+
+    // When the user clicks on <span> (x), close the modal
+    filterCloseBtn.onclick = function() {
+      filterModal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    //window.onclick = function(event) {
+      //if (event.target == filterModal) {
+        //filterModal.style.display = "none";
+      //}
+    //}
+  </script>
+<!-- JavaScript to handle filter -->
+<script>
+  var filterBtn = document.getElementById("filterBtn");
+  filterBtn.addEventListener("click", function() {
+
+    var filterData = {
+  category: document.getElementById("categoryInput").value,
+  name: document.getElementById("nameInput").value,
+  sku: document.getElementById("skuInput").value
+};
+
+    // Convert filter data to URL-encoded query string
+    //var queryString = Object.keys(filterData).map(key => key + '=' + filterData[key]).join('&');
+
+    var queryString = Object.keys(filterData)
+    .filter(key => filterData[key]) // Exclude empty values
+    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(filterData[key]))
+    .join('&');
+  console.log("Query String:", queryString);
+  console.log("Filter Data:", filterData);
+
+
+    // Send AJAX request to filter endpoint
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/your_filter_view/?" + queryString, true);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var responseData = JSON.parse(xhr.responseText);
+        document.getElementById('totalCategories').innerText = responseData.total_categories;
+        document.getElementById('totalItems').innerText = responseData.total_items;
+
+        // Update table entries directly
+        var tableBody = document.querySelector('#items-table tbody');
+        tableBody.innerHTML = ''; // Clear existing table rows
+        responseData.items.forEach(function(item) {
+          var row = tableBody.insertRow();
+          row.innerHTML = `<td>${item.sku}</td>
+                           <td>${item.name}</td>
+                           <td>${item.tags}</td>
+                           <td>${item.category}</td>
+                           <td>${item.in_stock < 100 ? '<span style="color: red;">&#9679;</span>' : '<span style="color: green;">&#9679;</span>'}${item.in_stock}</td>
+                         <td>${item.available_stock < 100 ? '<span style="color: red;">&#9679;</span>' : '<span style="color: green;">&#9679;</span>'}${item.available_stock}</td>`;
+        });
+
+        closeModal();
+      } else {
+        // Handle the error
+        console.error("Failed to retrieve filtered results.");
+      }
+    };
+    // Send the request to the server
+    xhr.send();
+  });
+</script>
+
+
+</body>
+</html>
